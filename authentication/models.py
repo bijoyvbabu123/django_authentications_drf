@@ -19,7 +19,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             'unique': 'A user with that email already exists.',
             'required': 'Email is required',
             'blank': 'Email is required',
-            'invalid': 'Enter a valid email address',
+            'invalid': 'Please Enter a Valid Email Address',
         }
     )
     first_name = models.CharField(_('first name'), max_length=150, blank=True)
@@ -60,3 +60,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    def tokens(self):
+        return ''
