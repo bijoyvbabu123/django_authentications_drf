@@ -30,9 +30,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         help_text=_('Designates whether the user can log into this admin site.'),
     )
     is_active = models.BooleanField(
-        _('active'),
-        default=False,
+        _('active status'),
+        default=True,
         help_text=_('Designates whether this user should be treated as active. Substitution for deleting accounts.'),
+    )
+    is_verified = models.BooleanField(
+        _('verified status'),
+        default=False,
+        help_text=_('Designates whether this user has verified their email address.'),
     )
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
 
