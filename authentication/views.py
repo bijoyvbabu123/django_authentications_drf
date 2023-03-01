@@ -1,11 +1,27 @@
 from django.shortcuts import render
-from rest_framework import generics, status
-from .serializers import SignupSerializer
+from django.contrib.sites.shortcuts import get_current_site
+from django.urls import reverse
+from django.conf import settings
+
+from .serializers import (
+    SignupSerializer,
+    EmailVerificationSerializer,
+)
 from .models import User
+from .utils import (
+    create_verification_email,
+    EmailUtil,
+    check_and_verify_user,
+)
+
+from rest_framework import generics, status, views
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework.permissions import IsAuthenticated
+
+import jwt
 
 # Create your views here.
 
@@ -21,18 +37,34 @@ class SignupView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        # current_user = User.objects.get(email=serializer.data['email'])
-        # refresh_token = RefreshToken.for_user(current_user) # Create a refresh token for the user
-        # refresh_token.access_token gives the access token associated with the refresh token
+        # generating a token for the current user
+        curr_user = User.objects.get(email=serializer.data['email'])
+        a_token = str(RefreshToken().for_user(user=curr_user).access_token)
 
-        # passing the request to TokenObtainPairView to get the refresh and access token
-        response = TokenObtainPairView.as_view()(request._request)  # request._request is the original request in django.request object
-        print(type(response.data['refresh']), "refresh token : ", response.data['refresh'])   # gives the refresh token
-        print(type(response.data['access']),"access token : ", response.data['access'])    # gives the access token
-
-
+        # sending the verification email
+        v_mail = create_verification_email(request=request, user=curr_user, token=a_token)
+        EmailUtil.send_email(v_mail)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# view for email verification
+class VerifyEmail(views.APIView):
+    serializer_class = EmailVerificationSerializer()
+
+    def get(self, request):
+        token = request.GET.get('token')
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            check_and_verify_user(pkey=payload['user_id'])
+            return Response({'email': 'Successfully activated'}, status=status.HTTP_200_OK)
+
+        except jwt.ExpiredSignatureError as identifier:
+            return Response({'error': 'Activation Expired'}, status=status.HTTP_400_BAD_REQUEST)
+        except jwt.exceptions.DecodeError as identifier:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 # a simple view to test the authentication. For this view, we need to pass the access token in the authorization header (bearer token)
