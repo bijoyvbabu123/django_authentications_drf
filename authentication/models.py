@@ -3,9 +3,17 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.core.validators import EmailValidator
+
 from .managers import UserManager
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
 # Create your models here.
+
+auth_provider_choices = (
+    ('email', 'email'),
+    ('google', 'google'),
+)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -21,6 +29,12 @@ class User(AbstractBaseUser, PermissionsMixin):
             'blank': 'Email is required',
             'invalid': 'Please Enter a Valid Email Address',
         }
+    )
+    auth_provider = models.CharField(
+        _('authentication provider'),
+        max_length=50,
+        choices=auth_provider_choices,
+        default='email',
     )
     first_name = models.CharField(_('first name'), max_length=150, blank=True)
     last_name = models.CharField(_('last name'), max_length=150, blank=True)
@@ -67,4 +81,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
     def tokens(self):
-        return ''
+        refresh = RefreshToken().for_user(self)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }

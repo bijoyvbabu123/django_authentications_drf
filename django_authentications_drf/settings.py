@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'authentication.apps.AuthenticationConfig',
+    'socialauth.apps.SocialauthConfig',
     'rest_framework_simplejwt',
 ]
 
@@ -148,4 +149,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=50),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
+
+# social auth secret
+SOCIAL_SECRET = config('SOCIAL_SECRET')
 
